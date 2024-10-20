@@ -5,10 +5,19 @@ provider "aws" {
 resource "aws_vpc" "diagram" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support = true
+  enable_dns_support   = true
 
   tags = {
     Name = "diagram-vpc"
+  }
+}
+
+resource "aws_subnet" "public" {
+  vpc_id     = aws_vpc.diagram.id
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "diagram-public-subnet"
   }
 }
 
@@ -20,16 +29,7 @@ resource "aws_internet_gateway" "diagram" {
   }
 }
 
-resource "aws_subnet" "diagram" {
-  vpc_id     = aws_vpc.diagram.id
-  cidr_block = "10.0.1.0/24"
-
-  tags = {
-    Name = "diagram-subnet"
-  }
-}
-
-resource "aws_route_table" "diagram" {
+resource "aws_route_table" "public" {
   vpc_id = aws_vpc.diagram.id
 
   route {
@@ -38,13 +38,13 @@ resource "aws_route_table" "diagram" {
   }
 
   tags = {
-    Name = "diagram-rt"
+    Name = "diagram-public-rt"
   }
 }
 
-resource "aws_route_table_association" "diagram" {
-  subnet_id      = aws_subnet.diagram.id
-  route_table_id = aws_route_table.diagram.id
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_security_group" "diagram" {
@@ -53,11 +53,11 @@ resource "aws_security_group" "diagram" {
   vpc_id      = aws_vpc.diagram.id
 
   ingress {
-    description = "SSH from VPC"
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] # 適宜変更
   }
 
   tags = {
@@ -66,9 +66,9 @@ resource "aws_security_group" "diagram" {
 }
 
 resource "aws_instance" "diagram" {
-  ami           = "ami-06b21ccaeff8cd686"  # AL2023
+  ami           = "ami-06b21ccaeff8cd686" # AL2023
   instance_type = "t2.micro"
-  subnet_id     = aws_subnet.diagram.id
+  subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.diagram.id]
   key_name      = "hiyama-diagram"
 
