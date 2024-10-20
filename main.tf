@@ -5,7 +5,7 @@ provider "aws" {
 resource "aws_vpc" "diagram" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support   = true
+  enable_dns_support = true
 
   tags = {
     Name = "diagram-vpc"
@@ -66,7 +66,7 @@ resource "aws_security_group" "diagram" {
 }
 
 resource "aws_instance" "diagram" {
-  ami           = "ami-06b21ccaeff8cd686" # AL2023
+  ami           = "ami-03f584e50b2d32776" # AL2023
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.diagram.id]
