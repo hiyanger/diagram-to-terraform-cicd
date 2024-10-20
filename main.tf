@@ -14,7 +14,6 @@ provider "aws" {
 
 resource "aws_vpc" "diagram" {
   cidr_block = "10.0.0.0/16"
-  
   tags = {
     Name = "diagram-vpc"
   }
@@ -23,15 +22,13 @@ resource "aws_vpc" "diagram" {
 resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.diagram.id
   cidr_block = "10.0.1.0/24"
-
   tags = {
-    Name = "diagram-public-subnet"
+    Name = "diagram-subnet"
   }
 }
 
 resource "aws_internet_gateway" "diagram" {
   vpc_id = aws_vpc.diagram.id
-
   tags = {
     Name = "diagram-igw"
   }
@@ -39,14 +36,12 @@ resource "aws_internet_gateway" "diagram" {
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.diagram.id
-
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.diagram.id
   }
-
   tags = {
-    Name = "diagram-public-rt"
+    Name = "diagram-rt"
   }
 }
 
