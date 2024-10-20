@@ -12,20 +12,20 @@ resource "aws_vpc" "diagram" {
   }
 }
 
+resource "aws_internet_gateway" "diagram" {
+  vpc_id = aws_vpc.diagram.id
+
+  tags = {
+    Name = "diagram-igw"
+  }
+}
+
 resource "aws_subnet" "diagram" {
   vpc_id     = aws_vpc.diagram.id
   cidr_block = "10.0.1.0/24"
 
   tags = {
     Name = "diagram-subnet"
-  }
-}
-
-resource "aws_internet_gateway" "diagram" {
-  vpc_id = aws_vpc.diagram.id
-
-  tags = {
-    Name = "diagram-igw"
   }
 }
 
