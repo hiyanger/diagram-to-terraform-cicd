@@ -30,16 +30,15 @@ resource "aws_subnet" "public" {
   count             = 2
   vpc_id            = aws_vpc.diagram.id
   cidr_block        = "10.0.${count.index + 1}.0/24"
-  availability_zone = "ap-northeast-1${count.index == 0 ? "a" : "c"}"
+  availability_zone = data.aws_availability_zones.available.names[count.index]
   tags = {
     Name = "diagram-public-subnet-${count.index + 1}"
   }
 }
 
 resource "aws_subnet" "private" {
-  vpc_id            = aws_vpc.diagram.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "ap-northeast-1a"
+  vpc_id     = aws_vpc.diagram.id
+  cidr_block = "10.0.3.0/24"
   tags = {
     Name = "diagram-private-subnet"
   }
@@ -49,14 +48,14 @@ resource "aws_nat_gateway" "diagram" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
   tags = {
-    Name = "diagram-nat-gateway"
+    Name = "diagram-natgw"
   }
 }
 
 resource "aws_eip" "nat" {
   domain = "vpc"
   tags = {
-    Name = "diagram-nat-eip"
+    Name = "diagram-eip"
   }
 }
 
@@ -81,12 +80,12 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_instance" "diagram" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t3.micro"
-  subnet_id     = aws_subnet.private.id
-  key_name      = "hiyama-diagram"
+  ami                    = "ami-03f584e50b2d32776" # AL2023
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.private.id
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  key_name               = "hiyama-diagram"
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.ec2.id]
   tags = {
     Name = "diagram-ec2"
   }
@@ -117,7 +116,11 @@ resource "aws_s3_bucket" "diagram" {
 }
 
 resource "aws_cloudwatch_log_group" "diagram" {
-  name = "diagram-log-group"
+  name = "diagram-flow-logs"
   tags = {
-    Name = "diagram-cloudwatch"
-  
+    Name = "diagram-flow-logs"
+  }
+}
+
+resource "aws_sns_topic" "diagram" {
+  name = "diagram
