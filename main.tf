@@ -19,43 +19,27 @@ resource "aws_vpc" "diagram" {
   }
 }
 
-resource "aws_subnet" "public" {
+resource "aws_subnet" "diagram" {
   vpc_id     = aws_vpc.diagram.id
   cidr_block = "10.0.1.0/24"
   tags = {
-    Name = "diagram-public-subnet"
+    Name = "diagram-subnet"
   }
 }
 
-resource "aws_subnet" "private" {
-  vpc_id     = aws_vpc.diagram.id
-  cidr_block = "10.0.2.0/24"
+resource "aws_instance" "diagram" {
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.diagram.id
+  key_name      = "hiyama-diagram"
+
+  associate_public_ip_address = true
+
+  vpc_security_group_ids = [aws_security_group.diagram.id]
+
   tags = {
-    Name = "diagram-private-subnet"
+    Name = "diagram-ec2"
   }
-}
-
-resource "aws_internet_gateway" "diagram" {
-  vpc_id = aws_vpc.diagram.id
-  tags = {
-    Name = "diagram-igw"
-  }
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.diagram.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.diagram.id
-  }
-  tags = {
-    Name = "diagram-public-rt"
-  }
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_security_group" "diagram" {
@@ -75,52 +59,3 @@ resource "aws_security_group" "diagram" {
     Name = "diagram-sg"
   }
 }
-
-resource "aws_instance" "diagram" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  key_name      = "hiyama-diagram"
-
-  subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.diagram.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "diagram-ec2"
-  }
-}
-
-resource "aws_eks_cluster" "diagram" {
-  name     = "diagram-eks-cluster"
-  role_arn = aws_iam_role.eks_cluster.arn
-
-  vpc_config {
-    subnet_ids = [aws_subnet.public.id, aws_subnet.private.id]
-  }
-
-  depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
-}
-
-resource "aws_iam_role" "eks_cluster" {
-  name = "diagram-eks-cluster-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster.name
-}
-
-resource "aws_cloudtrail
