@@ -27,18 +27,16 @@ resource "aws_internet_gateway" "diagram" {
 }
 
 resource "aws_subnet" "public" {
-  count             = 2
-  vpc_id            = aws_vpc.diagram.id
-  cidr_block        = "10.0.${count.index + 1}.0/24"
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  vpc_id     = aws_vpc.diagram.id
+  cidr_block = "10.0.1.0/24"
   tags = {
-    Name = "diagram-public-subnet-${count.index + 1}"
+    Name = "diagram-public-subnet"
   }
 }
 
 resource "aws_subnet" "private" {
   vpc_id     = aws_vpc.diagram.id
-  cidr_block = "10.0.3.0/24"
+  cidr_block = "10.0.2.0/24"
   tags = {
     Name = "diagram-private-subnet"
   }
@@ -46,7 +44,7 @@ resource "aws_subnet" "private" {
 
 resource "aws_nat_gateway" "diagram" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
+  subnet_id     = aws_subnet.public.id
   tags = {
     Name = "diagram-natgw"
   }
@@ -64,18 +62,9 @@ resource "aws_lb" "diagram" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = aws_subnet.public[*].id
+  subnets            = [aws_subnet.public.id]
   tags = {
     Name = "diagram-alb"
-  }
-}
-
-resource "aws_security_group" "alb" {
-  name        = "diagram-alb-sg"
-  description = "Security group for ALB"
-  vpc_id      = aws_vpc.diagram.id
-  tags = {
-    Name = "diagram-alb-sg"
   }
 }
 
@@ -93,7 +82,7 @@ resource "aws_instance" "diagram" {
 
 resource "aws_security_group" "ec2" {
   name        = "diagram-ec2-sg"
-  description = "Security group for EC2"
+  description = "Security group for EC2 instance"
   vpc_id      = aws_vpc.diagram.id
 
   ingress {
@@ -108,6 +97,23 @@ resource "aws_security_group" "ec2" {
   }
 }
 
+resource "aws_security_group" "alb" {
+  name        = "diagram-alb-sg"
+  description = "Security group for ALB"
+  vpc_id      = aws_vpc.diagram.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "diagram-alb-sg"
+  }
+}
+
 resource "aws_s3_bucket" "diagram" {
   bucket = "diagram-s3-bucket"
   tags = {
@@ -116,11 +122,10 @@ resource "aws_s3_bucket" "diagram" {
 }
 
 resource "aws_cloudwatch_log_group" "diagram" {
-  name = "diagram-flow-logs"
+  name = "diagram-log-group"
   tags = {
-    Name = "diagram-flow-logs"
+    Name = "diagram-cloudwatch"
   }
 }
 
-resource "aws_sns_topic" "diagram" {
-  name = "diagram
+resource "aws_sns_topic" "diagram"
