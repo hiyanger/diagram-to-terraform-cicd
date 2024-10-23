@@ -19,18 +19,18 @@ resource "aws_vpc" "diagram" {
   }
 }
 
-resource "aws_internet_gateway" "diagram" {
-  vpc_id = aws_vpc.diagram.id
-  tags = {
-    Name = "diagram-igw"
-  }
-}
-
 resource "aws_subnet" "diagram" {
   vpc_id     = aws_vpc.diagram.id
   cidr_block = "10.0.1.0/24"
   tags = {
     Name = "diagram-subnet"
+  }
+}
+
+resource "aws_internet_gateway" "diagram" {
+  vpc_id = aws_vpc.diagram.id
+  tags = {
+    Name = "diagram-igw"
   }
 }
 
@@ -80,52 +80,3 @@ resource "aws_instance" "diagram" {
     Name = "diagram-ec2"
   }
 }
-
-resource "aws_ecs_cluster" "diagram" {
-  name = "diagram-cluster"
-  tags = {
-    Name = "diagram-ecs-cluster"
-  }
-}
-
-resource "aws_ecs_task_definition" "diagram" {
-  family                   = "diagram-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
-
-  container_definitions = jsonencode([
-    {
-      name  = "diagram-container"
-      image = "nginx:latest"
-      portMappings = [
-        {
-          containerPort = 80
-          hostPort      = 80
-        }
-      ]
-    }
-  ])
-
-  tags = {
-    Name = "diagram-ecs-task-definition"
-  }
-}
-
-resource "aws_ecs_service" "diagram" {
-  name            = "diagram-service"
-  cluster         = aws_ecs_cluster.diagram.id
-  task_definition = aws_ecs_task_definition.diagram.arn
-  desired_count   = 3
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = [aws_subnet.diagram.id]
-    security_groups  = [aws_security_group.diagram.id]
-    assign_public_ip = true
-  }
-
-  tags = {
-    Name = "diagram-ecs-service"
-  
