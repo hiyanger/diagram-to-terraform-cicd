@@ -46,14 +46,14 @@ resource "aws_nat_gateway" "diagram" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public.id
   tags = {
-    Name = "diagram-natgw"
+    Name = "diagram-nat-gateway"
   }
 }
 
 resource "aws_eip" "nat" {
   domain = "vpc"
   tags = {
-    Name = "diagram-eip"
+    Name = "diagram-nat-eip"
   }
 }
 
@@ -61,7 +61,6 @@ resource "aws_lb" "diagram" {
   name               = "diagram-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
   subnets            = [aws_subnet.public.id]
   tags = {
     Name = "diagram-alb"
@@ -69,12 +68,12 @@ resource "aws_lb" "diagram" {
 }
 
 resource "aws_instance" "diagram" {
-  ami                    = "ami-03f584e50b2d32776" # AL2023
-  instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.private.id
-  vpc_security_group_ids = [aws_security_group.ec2.id]
-  key_name               = "hiyama-diagram"
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.private.id
+  key_name      = "hiyama-diagram"
   associate_public_ip_address = true
+  vpc_security_group_ids = [aws_security_group.ec2.id]
   tags = {
     Name = "diagram-ec2"
   }
@@ -97,23 +96,6 @@ resource "aws_security_group" "ec2" {
   }
 }
 
-resource "aws_security_group" "alb" {
-  name        = "diagram-alb-sg"
-  description = "Security group for ALB"
-  vpc_id      = aws_vpc.diagram.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "diagram-alb-sg"
-  }
-}
-
 resource "aws_s3_bucket" "diagram" {
   bucket = "diagram-s3-bucket"
   tags = {
@@ -122,10 +104,31 @@ resource "aws_s3_bucket" "diagram" {
 }
 
 resource "aws_cloudwatch_log_group" "diagram" {
-  name = "diagram-log-group"
+  name = "diagram-cloudwatch-log-group"
   tags = {
     Name = "diagram-cloudwatch"
   }
 }
 
-resource "aws_sns_topic" "diagram"
+resource "aws_sns_topic" "diagram" {
+  name = "diagram-sns-topic"
+  tags = {
+    Name = "diagram-sns"
+  }
+}
+
+resource "aws_iam_role" "diagram" {
+  name = "diagram-iam-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+  tags =
