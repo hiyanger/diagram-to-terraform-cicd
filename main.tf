@@ -14,6 +14,7 @@ provider "aws" {
 
 resource "aws_vpc" "diagram" {
   cidr_block = "10.0.0.0/16"
+  
   tags = {
     Name = "diagram-vpc"
   }
@@ -22,23 +23,9 @@ resource "aws_vpc" "diagram" {
 resource "aws_subnet" "diagram" {
   vpc_id     = aws_vpc.diagram.id
   cidr_block = "10.0.1.0/24"
+  
   tags = {
     Name = "diagram-subnet"
-  }
-}
-
-resource "aws_instance" "diagram" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.diagram.id
-  key_name      = "hiyama-diagram"
-
-  associate_public_ip_address = true
-
-  vpc_security_group_ids = [aws_security_group.diagram.id]
-
-  tags = {
-    Name = "diagram-ec2"
   }
 }
 
@@ -57,5 +44,18 @@ resource "aws_security_group" "diagram" {
 
   tags = {
     Name = "diagram-sg"
+  }
+}
+
+resource "aws_instance" "diagram" {
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.diagram.id
+  vpc_security_group_ids = [aws_security_group.diagram.id]
+  associate_public_ip_address = true
+  key_name      = "hiyama-diagram"
+
+  tags = {
+    Name = "diagram-ec2"
   }
 }
