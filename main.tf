@@ -69,15 +69,63 @@ resource "aws_security_group" "diagram" {
 }
 
 resource "aws_instance" "diagram" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  key_name      = "hiyama-diagram"
-
+  ami                         = "ami-03f584e50b2d32776" # AL2023
+  instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.diagram.id
   vpc_security_group_ids      = [aws_security_group.diagram.id]
   associate_public_ip_address = true
+  key_name                    = "hiyama-diagram"
 
   tags = {
     Name = "diagram-ec2"
   }
 }
+
+resource "aws_ecs_cluster" "diagram" {
+  name = "diagram-cluster"
+  tags = {
+    Name = "diagram-ecs-cluster"
+  }
+}
+
+resource "aws_ecs_task_definition" "diagram" {
+  family                   = "diagram-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+
+  container_definitions = jsonencode([
+    {
+      name  = "diagram-container"
+      image = "nginx:latest"
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+        }
+      ]
+    }
+  ])
+
+  tags = {
+    Name = "diagram-ecs-task-definition"
+  }
+}
+
+resource "aws_ecs_service" "diagram" {
+  name            = "diagram-service"
+  cluster         = aws_ecs_cluster.diagram.id
+  task_definition = aws_ecs_task_definition.diagram.arn
+  desired_count   = 3
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.diagram.id]
+    security_groups  = [aws_security_group.diagram.id]
+    assign_public_ip = true
+  }
+
+  tags = {
+    Name = "diagram-ecs-service"
+  
