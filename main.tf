@@ -12,31 +12,29 @@ provider "aws" {
   secret_key = var.aws_secret_access_key
 }
 
-resource "aws_security_group" "diagram" {
-  name        = "diagram"
-  description = "Security group for diagram"
+resource "aws_instance" "diagram" {
+  ami                         = "ami-03f584e50b2d32776" # AL2023
+  instance_type              = "t3.micro"
+  associate_public_ip_address = true
+  key_name                   = "hiyama-diagram"
+  vpc_security_group_ids     = [aws_security_group.diagram.id]
 
+  tags = {
+    Name = "diagram-ec2"
+  }
+}
+
+resource "aws_security_group" "diagram" {
+  name = "diagram-sg"
+  
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # 適宜変更
+    cidr_blocks = ["0.0.0.0/0"] # 適宜変更
   }
 
   tags = {
     Name = "diagram-sg"
-  }
-}
-
-resource "aws_instance" "diagram" {
-  ami           = "ami-03f584e50b2d32776"  # AL2023
-  instance_type = "t2.micro"
-  key_name      = "hiyama-diagram"
-
-  security_groups = [aws_security_group.diagram.name]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "diagram-ec2"
   }
 }
