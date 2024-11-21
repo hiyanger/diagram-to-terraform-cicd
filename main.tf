@@ -13,11 +13,11 @@ provider "aws" {
 }
 
 resource "aws_instance" "diagram" {
-  ami                         = "ami-03f584e50b2d32776" # AL2023
-  instance_type              = "t3.micro"
+  ami           = "ami-03f584e50b2d32776"  # AL2023
+  instance_type = "t2.micro"
+  key_name      = "hiyama-diagram"
   associate_public_ip_address = true
-  key_name                   = "hiyama-diagram"
-  vpc_security_group_ids     = [aws_security_group.diagram.id]
+  vpc_security_group_ids = [aws_security_group.diagram.id]
 
   tags = {
     Name = "diagram-ec2"
@@ -31,7 +31,7 @@ resource "aws_security_group" "diagram" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 適宜変更
+    cidr_blocks = ["0.0.0.0/0"]  # 適宜変更
   }
 
   tags = {
