@@ -27,36 +27,77 @@ resource "aws_internet_gateway" "diagram" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id     = aws_vpc.diagram.id
-  cidr_block = "10.0.1.0/24"
+  count             = 2
+  vpc_id            = aws_vpc.diagram.id
+  cidr_block        = "10.0.${count.index + 1}.0/24"
+  availability_zone = "ap-northeast-1${count.index == 0 ? "a" : "c"}"
   tags = {
-    Name = "diagram-public-subnet"
+    Name = "diagram-public-subnet-${count.index + 1}"
   }
 }
 
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.diagram.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.diagram.id
-  }
+resource "aws_subnet" "private" {
+  vpc_id            = aws_vpc.diagram.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "ap-northeast-1a"
   tags = {
-    Name = "diagram-public-rt"
+    Name = "diagram-private-subnet"
   }
 }
 
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
+resource "aws_nat_gateway" "diagram" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
+  tags = {
+    Name = "diagram-natgw"
+  }
 }
 
-resource "aws_security_group" "diagram" {
-  name        = "diagram-sg"
-  description = "Allow SSH inbound traffic"
+resource "aws_eip" "nat" {
+  domain = "vpc"
+  tags = {
+    Name = "diagram-eip"
+  }
+}
+
+resource "aws_lb" "diagram" {
+  name               = "diagram-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = aws_subnet.public[*].id
+  tags = {
+    Name = "diagram-alb"
+  }
+}
+
+resource "aws_security_group" "alb" {
+  name        = "diagram-alb-sg"
+  description = "Security group for ALB"
+  vpc_id      = aws_vpc.diagram.id
+  tags = {
+    Name = "diagram-alb-sg"
+  }
+}
+
+resource "aws_instance" "diagram" {
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.private.id
+  key_name      = "hiyama-diagram"
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  associate_public_ip_address = true
+  tags = {
+    Name = "diagram-ec2"
+  }
+}
+
+resource "aws_security_group" "ec2" {
+  name        = "diagram-ec2-sg"
+  description = "Security group for EC2"
   vpc_id      = aws_vpc.diagram.id
 
   ingress {
-    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -64,19 +105,20 @@ resource "aws_security_group" "diagram" {
   }
 
   tags = {
-    Name = "diagram-sg"
+    Name = "diagram-ec2-sg"
   }
 }
 
-resource "aws_instance" "diagram" {
-  ami                         = "ami-03f584e50b2d32776" # AL2023
-  instance_type               = "t2.micro"
-  subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.diagram.id]
-  associate_public_ip_address = true
-  key_name                    = "hiyama-diagram"
-
+resource "aws_s3_bucket" "diagram" {
+  bucket = "diagram-s3-bucket"
   tags = {
-    Name = "diagram-ec2"
+    Name = "diagram-s3"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "diagram" {
+  name = "diagram-log-group"
+  tags = {
+    Name = "diagram-cloudwatch"
   }
 }
