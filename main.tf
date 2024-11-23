@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "deploy" {
-  bucket = "20241123_awsevents3"
+  bucket = "zennscraptest20241123"
 
   tags = {
     Name = "deploy-s3"
