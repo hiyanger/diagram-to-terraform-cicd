@@ -7,13 +7,14 @@ variable "aws_secret_access_key" {
 }
 
 provider "aws" {
-  region = "ap-northeast-1"
+  region     = "ap-northeast-1"
   access_key = var.aws_access_key_id
   secret_key = var.aws_secret_access_key
 }
 
 resource "aws_vpc" "deploy" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
 
   tags = {
     Name = "deploy-vpc"
@@ -56,7 +57,7 @@ resource "aws_route_table_association" "deploy" {
 }
 
 resource "aws_security_group" "deploy" {
-  name   = "deploy"
+  name   = "deploy-sg"
   vpc_id = aws_vpc.deploy.id
 
   ingress {
@@ -72,13 +73,12 @@ resource "aws_security_group" "deploy" {
 }
 
 resource "aws_instance" "deploy" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.deploy.id
-  key_name      = "hiyama-diagram"
-
+  ami                         = "ami-03f584e50b2d32776" # AL2023
+  instance_type               = "t2.micro"
+  subnet_id                   = aws_subnet.deploy.id
+  vpc_security_group_ids      = [aws_security_group.deploy.id]
   associate_public_ip_address = true
-  vpc_security_group_ids     = [aws_security_group.deploy.id]
+  key_name                   = "hiyama-diagram"
 
   tags = {
     Name = "deploy-ec2"
