@@ -19,3 +19,10 @@ resource "aws_s3_bucket" "diagram" {
     Name = "diagram-s3"
   }
 }
+
+resource "aws_s3_bucket_versioning" "diagram" {
+  bucket = aws_s3_bucket.diagram.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
