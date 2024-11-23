@@ -13,8 +13,8 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "diagram" {
-  bucket = "diagram"
-  
+  bucket = "diagram-bucket"
+
   tags = {
     Name = "diagram-s3"
   }
