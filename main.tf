@@ -7,14 +7,14 @@ variable "aws_secret_access_key" {
 }
 
 provider "aws" {
-  region     = "ap-northeast-1"
+  region = "ap-northeast-1"
   access_key = var.aws_access_key_id
   secret_key = var.aws_secret_access_key
 }
 
 resource "aws_s3_bucket" "diagram" {
-  bucket = "diagram-bucket"
-
+  bucket = "diagram"
+  
   tags = {
     Name = "diagram-s3"
   }
