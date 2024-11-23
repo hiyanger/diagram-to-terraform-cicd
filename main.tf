@@ -7,15 +7,14 @@ variable "aws_secret_access_key" {
 }
 
 provider "aws" {
-  region     = "ap-northeast-1"
+  region = "ap-northeast-1"
   access_key = var.aws_access_key_id
   secret_key = var.aws_secret_access_key
 }
 
 resource "aws_vpc" "deploy" {
   cidr_block = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+
   tags = {
     Name = "deploy-vpc"
   }
@@ -24,7 +23,7 @@ resource "aws_vpc" "deploy" {
 resource "aws_subnet" "deploy" {
   vpc_id     = aws_vpc.deploy.id
   cidr_block = "10.0.1.0/24"
-  map_public_ip_on_launch = true
+
   tags = {
     Name = "deploy-subnet"
   }
@@ -32,6 +31,7 @@ resource "aws_subnet" "deploy" {
 
 resource "aws_internet_gateway" "deploy" {
   vpc_id = aws_vpc.deploy.id
+
   tags = {
     Name = "deploy-igw"
   }
@@ -39,12 +39,14 @@ resource "aws_internet_gateway" "deploy" {
 
 resource "aws_route_table" "deploy" {
   vpc_id = aws_vpc.deploy.id
+
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.deploy.id
   }
+
   tags = {
-    Name = "deploy-rtb"
+    Name = "deploy-rt"
   }
 }
 
@@ -54,7 +56,7 @@ resource "aws_route_table_association" "deploy" {
 }
 
 resource "aws_security_group" "deploy" {
-  name   = "deploy-sg"
+  name   = "deploy"
   vpc_id = aws_vpc.deploy.id
 
   ingress {
@@ -74,9 +76,19 @@ resource "aws_instance" "deploy" {
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.deploy.id
   key_name      = "hiyama-diagram"
-  vpc_security_group_ids = [aws_security_group.deploy.id]
+
+  associate_public_ip_address = true
+  vpc_security_group_ids     = [aws_security_group.deploy.id]
 
   tags = {
     Name = "deploy-ec2"
+  }
+}
+
+resource "aws_s3_bucket" "deploy" {
+  bucket = "deploy-bucket"
+
+  tags = {
+    Name = "deploy-s3"
   }
 }
