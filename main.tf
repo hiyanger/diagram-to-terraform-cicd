@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "deploy" {
-  bucket = "deploy-s3"
+  bucket = "deploy-bucket"
   tags = {
     Name = "deploy-s3"
   }
