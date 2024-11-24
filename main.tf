@@ -13,9 +13,5 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "deploy" {
-  bucket = "zennscraptest20241123"
-
-  tags = {
-    Name = "deploy-s3"
-  }
+  bucket = "orehaawsmasterda-20241127"
 }
