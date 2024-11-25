@@ -12,56 +12,25 @@ provider "aws" {
   secret_key = var.aws_secret_access_key
 }
 
-resource "aws_vpc" "deploy" {
-  cidr_block = "10.0.0.0/16"
-  enable_dns_support = true
-  enable_dns_hostnames = true
-  tags = {
-    Name = "deploy-vpc"
-  }
-}
+resource "aws_instance" "deploy" {
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  key_name      = "hiyama-diagram"
 
-resource "aws_internet_gateway" "deploy" {
-  vpc_id = aws_vpc.deploy.id
-  tags = {
-    Name = "deploy-igw"
-  }
-}
+  vpc_security_group_ids = [aws_security_group.deploy.id]
 
-resource "aws_subnet" "deploy" {
-  vpc_id = aws_vpc.deploy.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "ap-northeast-1a"
-  map_public_ip_on_launch = true
   tags = {
-    Name = "deploy-subnet"
+    Name = "deploy-ec2"
   }
-}
-
-resource "aws_route_table" "deploy" {
-  vpc_id = aws_vpc.deploy.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.deploy.id
-  }
-  tags = {
-    Name = "deploy-rt"
-  }
-}
-
-resource "aws_route_table_association" "deploy" {
-  subnet_id = aws_subnet.deploy.id
-  route_table_id = aws_route_table.deploy.id
 }
 
 resource "aws_security_group" "deploy" {
-  name = "deploy-sg"
-  vpc_id = aws_vpc.deploy.id
+  name = "deploy"
 
   ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # 適宜変更
   }
 
@@ -70,14 +39,10 @@ resource "aws_security_group" "deploy" {
   }
 }
 
-resource "aws_instance" "deploy" {
-  ami = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  subnet_id = aws_subnet.deploy.id
-  vpc_security_group_ids = [aws_security_group.deploy.id]
-  key_name = "hiyama-diagram"
+resource "aws_s3_bucket" "deploy" {
+  bucket = "deploy-bucket"
 
   tags = {
-    Name = "deploy-ec2"
+    Name = "deploy-s3"
   }
 }
