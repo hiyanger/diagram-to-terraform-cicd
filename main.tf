@@ -12,58 +12,25 @@ provider "aws" {
   secret_key = var.aws_secret_access_key
 }
 
-resource "aws_vpc" "deploy" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+resource "aws_instance" "deploy" {
+  ami           = "ami-03f584e50b2d32776" # AL2023
+  instance_type = "t2.micro"
+  key_name      = "hiyama-diagram"
+
+  associate_public_ip_address = true
+  vpc_security_group_ids     = [aws_security_group.deploy.id]
 
   tags = {
-    Name = "deploy-vpc"
+    Name = "deploy-ec2"
   }
-}
-
-resource "aws_subnet" "deploy" {
-  vpc_id                  = aws_vpc.deploy.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "deploy-subnet"
-  }
-}
-
-resource "aws_internet_gateway" "deploy" {
-  vpc_id = aws_vpc.deploy.id
-
-  tags = {
-    Name = "deploy-igw"
-  }
-}
-
-resource "aws_route_table" "deploy" {
-  vpc_id = aws_vpc.deploy.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.deploy.id
-  }
-
-  tags = {
-    Name = "deploy-rtb"
-  }
-}
-
-resource "aws_route_table_association" "deploy" {
-  subnet_id      = aws_subnet.deploy.id
-  route_table_id = aws_route_table.deploy.id
 }
 
 resource "aws_security_group" "deploy" {
-  name        = "deploy-sg"
-  description = "Security group for EC2"
-  vpc_id      = aws_vpc.deploy.id
+  name        = "deploy"
+  description = "Allow SSH inbound traffic"
 
   ingress {
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -72,27 +39,5 @@ resource "aws_security_group" "deploy" {
 
   tags = {
     Name = "deploy-sg"
-  }
-}
-
-resource "aws_instance" "deploy" {
-  ami           = "ami-03f584e50b2d32776" # AL2023
-  instance_type = "t2.micro"
-  key_name      = "hiyama-diagram"
-
-  subnet_id                   = aws_subnet.deploy.id
-  vpc_security_group_ids      = [aws_security_group.deploy.id]
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "deploy-ec2"
-  }
-}
-
-resource "aws_s3_bucket" "deploy" {
-  bucket = "deploy-bucket"
-
-  tags = {
-    Name = "deploy-s3"
   }
 }
