@@ -12,77 +12,82 @@ provider "aws" {
   secret_key = var.aws_secret_access_key
 }
 
-resource "aws_vpc" "deploy" {
+resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
-  enable_dns_hostnames = true
+  
   tags = {
     Name = "deploy-vpc"
   }
 }
 
-resource "aws_subnet" "deploy" {
-  vpc_id                  = aws_vpc.deploy.id
-  cidr_block              = "10.0.1.0/24"
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block             = "10.0.1.0/24"
+  availability_zone      = "ap-northeast-1a"
   map_public_ip_on_launch = true
-  availability_zone       = "ap-northeast-1a"
+  
   tags = {
     Name = "deploy-subnet"
   }
 }
 
-resource "aws_internet_gateway" "deploy" {
-  vpc_id = aws_vpc.deploy.id
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+  
   tags = {
     Name = "deploy-igw"
   }
 }
 
-resource "aws_route_table" "deploy" {
-  vpc_id = aws_vpc.deploy.id
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.deploy.id
+    gateway_id = aws_internet_gateway.main.id
   }
+  
   tags = {
     Name = "deploy-rtb"
   }
 }
 
-resource "aws_route_table_association" "deploy" {
-  subnet_id      = aws_subnet.deploy.id
-  route_table_id = aws_route_table.deploy.id
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
 }
 
-resource "aws_security_group" "deploy" {
-  name   = "deploy-sg"
-  vpc_id = aws_vpc.deploy.id
+resource "aws_security_group" "server" {
+  name   = "server"
+  vpc_id = aws_vpc.main.id
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 適宜変更
+    cidr_blocks = ["0.0.0.0/0"]  # 適宜変更
   }
-
+  
   tags = {
     Name = "deploy-sg"
   }
 }
 
-resource "aws_instance" "deploy" {
-  ami                    = "ami-03f584e50b2d32776" # AL2023
+resource "aws_instance" "server" {
+  ami                    = "ami-03f584e50b2d32776"  # AL2023
   instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.deploy.id
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.server.id]
   key_name              = "hiyama-diagram"
-  vpc_security_group_ids = [aws_security_group.deploy.id]
-
+  
   tags = {
     Name = "deploy-ec2"
   }
 }
 
-resource "aws_s3_bucket" "deploy" {
+resource "aws_s3_bucket" "storage" {
   bucket = "deploy-bucket"
+  
   tags = {
     Name = "deploy-s3"
   }
