@@ -12,9 +12,28 @@ provider "aws" {
   secret_key = var.aws_secret_access_key
 }
 
-resource "aws_s3_bucket" "deploy" {
-  bucket = "hajimetenos320241124"
+resource "aws_security_group" "deploy" {
+  name = "deploy-sg"
   tags = {
-    Name = "deploy-s3"
+    Name = "deploy-sg"
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # 適宜変更
+  }
+}
+
+resource "aws_instance" "deploy" {
+  ami                         = "ami-03f584e50b2d32776"  # AL2023
+  instance_type               = "t2.micro"
+  key_name                    = "hiyama-diagram"
+  vpc_security_group_ids      = [aws_security_group.deploy.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "deploy-ec2"
   }
 }
